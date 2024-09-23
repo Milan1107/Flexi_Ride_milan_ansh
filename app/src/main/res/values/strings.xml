@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">finalproject_texi_milan</string>
+    <string name="my_map_api_key">AIzaSyBh1TGTqkx1GPE21xW7cXjlcLtICPhNldc</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="app">Profile</string>
+
+    <string-array name="payment_methods">
+        <item>UPI (Google Pay)</item>
+        <item>Cash</item>
+        <item>Wallet</item>
+    </string-array>
+
+</resources>
