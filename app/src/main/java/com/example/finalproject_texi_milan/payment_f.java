@@ -3,53 +3,47 @@ package com.example.finalproject_texi_milan;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
-import android.widget.TextView;
+import android.widget.*;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
-import androidx.appcompat.app.AppCompatActivity;
 
-public class payment_activity extends AppCompatActivity {
-
+public class payment_f extends Fragment {
     private Spinner paymentMethodSpinner;
     private Button proceedPaymentButton;
     private EditText walletAmountEditText;
     private TextView walletAmountLabel;
     private String selectedPaymentMethod;
-
+    @Nullable
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_payment);
-
-        // Initialize UI elements
-        paymentMethodSpinner = findViewById(R.id.paymentMethodSpinner);
-        proceedPaymentButton = findViewById(R.id.proceedPaymentButton);
-        walletAmountEditText = findViewById(R.id.walletAmountEditText);
-        walletAmountLabel = findViewById(R.id.walletAmountLabel);
-
-        // Hide wallet amount options initially
-        walletAmountEditText.setVisibility(View.GONE);
-        walletAmountLabel.setVisibility(View.GONE);
-
-        // Setup Spinner (Dropdown) options
-        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_payment_f, container, false);
+        paymentMethodSpinner = view.findViewById(R.id.paymentMethodSpinner);
+        proceedPaymentButton = view.findViewById(R.id.proceedPaymentButton);
+        walletAmountEditText = view.findViewById(R.id.walletAmountEditText);
+        walletAmountLabel = view.findViewById(R.id.walletAmountLabel);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getContext(),
                 R.array.payment_options, R.layout.spinner_item);
         adapter.setDropDownViewResource(R.layout.spinner_dropdown_item);
         paymentMethodSpinner.setAdapter(adapter);
 
-        // Listener for dropdown menu selection
+        // Hide wallet amount options initially
+        walletAmountEditText.setVisibility(View.GONE);
+        walletAmountLabel.setVisibility(View.GONE);
         paymentMethodSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
                 selectedPaymentMethod = paymentMethodSpinner.getSelectedItem().toString();
-
-                // Show or hide wallet amount option based on selected method
                 if (selectedPaymentMethod.equals("Wallet")) {
                     walletAmountEditText.setVisibility(View.VISIBLE);
                     walletAmountLabel.setVisibility(View.VISIBLE);
@@ -72,6 +66,7 @@ public class payment_activity extends AppCompatActivity {
                 handlePayment();
             }
         });
+        return view;
     }
 
     // Handle the payment based on the selected method
@@ -81,19 +76,19 @@ public class payment_activity extends AppCompatActivity {
                 launchGooglePay();
                 break;
             case "Cash":
-                Toast.makeText(this, "Please hand over cash to the driver", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Please hand over cash to the driver", Toast.LENGTH_SHORT).show();
                 break;
             case "Wallet":
                 String amount = walletAmountEditText.getText().toString();
                 if (!amount.isEmpty()) {
                     // Process wallet payment (mocked for now)
-                    Toast.makeText(this, "Wallet payment of ₹" + amount + " successful", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Wallet payment of ₹" + amount + " successful", Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(this, "Please enter an amount", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(), "Please enter an amount", Toast.LENGTH_SHORT).show();
                 }
                 break;
             default:
-                Toast.makeText(this, "Please select a payment method", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Please select a payment method", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -106,7 +101,9 @@ public class payment_activity extends AppCompatActivity {
         try {
             startActivity(gpayIntent);
         } catch (Exception e) {
-            Toast.makeText(this, "Google Pay not installed on your device", Toast.LENGTH_SHORT).show();
- }
-}
+            Toast.makeText(getContext(), "Google Pay not installed on your device", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+
 }
