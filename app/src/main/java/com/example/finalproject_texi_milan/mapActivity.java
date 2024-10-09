@@ -32,15 +32,13 @@ import java.util.List;
 
 public class mapActivity extends AppCompatActivity implements OnMapReadyCallback {
 
-
-
     private GoogleMap mymap;
-    private SearchView pickupSearch, destinationSearch;
-    private ListView pickupSuggestionsListView, destinationSuggestionsListView;
+    private SearchView pickupSearch;
+    private ListView pickupSuggestionsListView;
     private PlacesClient placesClient;
-    private ArrayAdapter<String> pickupSuggestionsAdapter, destinationSuggestionsAdapter;
+    private ArrayAdapter<String> pickupSuggestionsAdapter;
 
-    private LatLng currentLocation, pickupLocation, destinationLocation;
+    private LatLng currentLocation, pickupLocation;
     private Button chooseCabButton;
 
     @Override
@@ -55,15 +53,10 @@ public class mapActivity extends AppCompatActivity implements OnMapReadyCallback
 
         placesClient = Places.createClient(this);
         pickupSearch = findViewById(R.id.pickupSearch);
-        destinationSearch = findViewById(R.id.destinationSearch);
         pickupSuggestionsListView = findViewById(R.id.pickupSuggestionsListView);
-        destinationSuggestionsListView = findViewById(R.id.destinationSuggestionsListView);
 
         pickupSuggestionsAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
-        destinationSuggestionsAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, new ArrayList<>());
-
         pickupSuggestionsListView.setAdapter(pickupSuggestionsAdapter);
-        destinationSuggestionsListView.setAdapter(destinationSuggestionsAdapter);
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
         if (mapFragment != null) {
@@ -74,35 +67,16 @@ public class mapActivity extends AppCompatActivity implements OnMapReadyCallback
         pickupSearch.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String s) {
-                performSearch(s, true);
+                performSearch(s);
                 return false;
             }
 
             @Override
             public boolean onQueryTextChange(String query) {
                 if (!query.isEmpty()) {
-                    showSuggestions(query, true);
+                    showSuggestions(query);
                 } else {
                     pickupSuggestionsAdapter.clear();
-                }
-                return false;
-            }
-        });
-
-        // Handle destination search
-        destinationSearch.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String s) {
-                performSearch(s, false);
-                return false;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String query) {
-                if (!query.isEmpty()) {
-                    showSuggestions(query, false);
-                } else {
-                    destinationSuggestionsAdapter.clear();
                 }
                 return false;
             }
@@ -111,24 +85,18 @@ public class mapActivity extends AppCompatActivity implements OnMapReadyCallback
         pickupSuggestionsListView.setOnItemClickListener((parent, view, position, id) -> {
             String selectedSuggestion = pickupSuggestionsAdapter.getItem(position);
             if (selectedSuggestion != null) {
-                performSearch(selectedSuggestion, true);
-            }
-        });
-
-        destinationSuggestionsListView.setOnItemClickListener((parent, view, position, id) -> {
-            String selectedSuggestion = destinationSuggestionsAdapter.getItem(position);
-            if (selectedSuggestion != null) {
-                performSearch(selectedSuggestion, false);
+                pickupSearch.setQuery(selectedSuggestion, false);  // Set the selected suggestion to the SearchView
+                performSearch(selectedSuggestion);  // Perform search for the selected suggestion
             }
         });
 
         chooseCabButton = findViewById(R.id.chooseCabButton);
         chooseCabButton.setOnClickListener(v -> {
-            if (destinationLocation != null) {
+            if (pickupLocation != null) {
                 Intent intent = new Intent(mapActivity.this, choose_cab.class);
                 startActivity(intent);
             } else {
-                Toast.makeText(mapActivity.this, "Please select a destination first", Toast.LENGTH_SHORT).show();
+                Toast.makeText(mapActivity.this, "Please select a pickup location first", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -151,7 +119,7 @@ public class mapActivity extends AppCompatActivity implements OnMapReadyCallback
         mymap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 12));
     }
 
-    private void performSearch(String location, boolean isPickup) {
+    private void performSearch(String location) {
         List<Address> addressList = null;
         if (location != null && !location.isEmpty()) {
             Geocoder geocoder = new Geocoder(mapActivity.this);
@@ -165,44 +133,30 @@ public class mapActivity extends AppCompatActivity implements OnMapReadyCallback
                 Address address = addressList.get(0);
                 LatLng latLng = new LatLng(address.getLatitude(), address.getLongitude());
 
-                // Update the pickup or destination location
-                if (isPickup) {
-                    pickupLocation = latLng;
-                    mymap.addMarker(new MarkerOptions()
-                            .position(pickupLocation)
-                            .title("Pickup Location")
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
-                } else {
-                    destinationLocation = latLng;
-                    mymap.addMarker(new MarkerOptions()
-                            .position(destinationLocation)
-                            .title("Destination Location")
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
-                }
+                // Update the pickup location
+                pickupLocation = latLng;
+                mymap.clear(); // Clear previous markers
+                mymap.addMarker(new MarkerOptions()
+                        .position(pickupLocation)
+                        .title("Pickup Location")
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
 
                 // Move the camera to the new location
                 mymap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 12));
-
-                // Optionally show the route if both locations are set
-                if (pickupLocation != null && destinationLocation != null) {
-                    showRoute(pickupLocation, destinationLocation);
-                }
 
             } else {
                 Toast.makeText(mapActivity.this, "Location not found", Toast.LENGTH_SHORT).show();
             }
         }
 
-        if (pickupLocation != null && destinationLocation != null) {
+        if (pickupLocation != null) {
             chooseCabButton.setVisibility(View.VISIBLE); // Show the button
-            showRoute(pickupLocation, destinationLocation);
         } else {
             chooseCabButton.setVisibility(View.GONE); // Hide the button if conditions are not met
         }
     }
 
-
-    private void showSuggestions(String query, boolean isPickup) {
+    private void showSuggestions(String query) {
         FindAutocompletePredictionsRequest request = FindAutocompletePredictionsRequest.builder()
                 .setQuery(query)
                 .build();
@@ -213,26 +167,12 @@ public class mapActivity extends AppCompatActivity implements OnMapReadyCallback
                 suggestions.add(prediction.getFullText(null).toString());
             }
 
-            if (isPickup) {
-                pickupSuggestionsAdapter.clear();
-                pickupSuggestionsAdapter.addAll(suggestions);
-                pickupSuggestionsAdapter.notifyDataSetChanged();
-                pickupSuggestionsListView.setVisibility(View.VISIBLE);
-            } else {
-                destinationSuggestionsAdapter.clear();
-                destinationSuggestionsAdapter.addAll(suggestions);
-                destinationSuggestionsAdapter.notifyDataSetChanged();
-                destinationSuggestionsListView.setVisibility(View.VISIBLE);
-            }
+            pickupSuggestionsAdapter.clear();
+            pickupSuggestionsAdapter.addAll(suggestions);
+            pickupSuggestionsAdapter.notifyDataSetChanged();
+            pickupSuggestionsListView.setVisibility(View.VISIBLE);
         }).addOnFailureListener((exception) -> {
             Toast.makeText(mapActivity.this, "Error getting suggestions", Toast.LENGTH_SHORT).show();
         });
-    }
-
-    private void showRoute(LatLng pickup, LatLng destination) {
-        mymap.animateCamera(CameraUpdateFactory.newLatLngBounds(new LatLngBounds.Builder()
-                .include(pickup)
-                .include(destination)
-                .build(), 100));
     }
 }
